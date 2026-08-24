@@ -12,14 +12,14 @@ a name update via the Kentik Device API (`v202504beta2`).
 ```mermaid
 flowchart TD
   A[CLI / Interactive prompts] --> B[KentikClient.list_devices]
-  B --> C{Filters: old-cred / site / vendor}
+  B --> C{Filters: old-cred / site / vendor / label}
   C -->|candidates| D[KentikClient.get_device per candidate]
   D --> E[build_update_payload]
   E --> F{dry_run?}
-  F -->|yes| G[Rich table preview — no writes]
+  F -->|yes| G[Rich table + per-device JSON payload]
   F -->|no| H[update_devices_batch in chunks of 100]
   H -->|batch fails| I[Fallback: per-device PUT]
-  H -->|success| J[Done]
+  H -->|success| J[Results table]
   I --> J
 ```
 
@@ -33,7 +33,7 @@ its payload to guarantee `agentId`, `ipAddress`, and
 | --- | --- | --- |
 | Python | 3.12+ | Managed automatically by `uv` |
 | uv | Latest | `brew install uv` or `pip install uv` |
-| Kentik API token | — | Scopes: `admin.device:read`, `admin.device:write`, `admin.credential:read` |
+| Kentik API token | — | Scopes: `admin.device:read`, `admin.device:write`, `admin.credential:read`, `admin.label:read` |
 
 ## Setup
 
@@ -109,11 +109,19 @@ Fetching devices from Kentik API…
     ──────────────────
     ← Quit
 
-┌──────────────────── Migration candidates ─────────────────────┐
-│ Device Name  │ Site     │ Vendor │ Agent ID │ Current  │ New  │
-│ core-rtr-01  │ New York │ cisco  │ 2512     │ snmp-v2… │ snmp │
-│ core-rtr-02  │ New York │ cisco  │ 2512     │ snmp-v2… │ snmp │
-└───────────────────────────────────────────────────────────────┘
+? Filter by label? (3 available)
+  > No filter — include all labels
+    prod-routers
+    datacenter
+    snmp-migration
+    ──────────────────
+    ← Quit
+
+┌──────────────────── Migration candidates ──────────────────────┐
+│ Device Name  │ Site     │ Vendor │ Labels       │ Agent ID │ … │
+│ core-rtr-01  │ New York │ cisco  │ prod-routers │ 2512     │ … │
+│ core-rtr-02  │ New York │ cisco  │ prod-routers │ 2512     │ … │
+└────────────────────────────────────────────────────────────────┘
 
 ? What would you like to do?
   > Dry-run (preview only, no changes)
@@ -136,7 +144,7 @@ would be sent. Once the payloads look correct, re-run and choose
 
 Pass `--old-credential` and `--new-credential` to skip all prompts.
 
-**Dry-run with no filters** — preview every matching device and show
+**Dry-run with no filters**: preview every matching device and show
 the exact JSON payload that would be sent for each:
 
 ```bash
@@ -166,6 +174,16 @@ uv run kentik-snmp-migrate \
   --dry-run
 ```
 
+**Dry-run filtered by label:**
+
+```bash
+uv run kentik-snmp-migrate \
+  --old-credential snmp-v2-prod \
+  --new-credential snmp-v3-prod \
+  --label prod-routers \
+  --dry-run
+```
+
 **Live apply with site and vendor filters:**
 
 ```bash
@@ -176,7 +194,7 @@ uv run kentik-snmp-migrate \
   --vendor cisco
 ```
 
-**Live apply with debug output** — prints the exact JSON body before
+**Live apply with debug output**: prints the exact JSON body before
 each API write:
 
 ```bash
@@ -186,7 +204,7 @@ uv run kentik-snmp-migrate \
   --debug
 ```
 
-**CI / automation — env vars inline, no `.env` file:**
+**CI / automation (env vars inline, no `.env` file):**
 
 ```bash
 KENTIK_EMAIL=ops@example.com \
@@ -208,7 +226,7 @@ uv run kentik-snmp-migrate \
    or the `admin.credential:read` scope is missing.
 3. **Filter** — candidates are devices whose
    `nms.snmp.credentialName` exactly matches the chosen old
-   credential, optionally narrowed by site name and vendor type.
+   credential, optionally narrowed by site, vendor, and label.
 4. **Preview** — a Rich table shows every candidate with its current
    and proposed credential. In dry-run mode the script re-fetches
    each device and prints the exact PUT payload per device, then

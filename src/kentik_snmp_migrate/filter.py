@@ -6,6 +6,7 @@ def filter_devices(
     old_credential: str,
     site: str | None = None,
     vendor: str | None = None,
+    label: str | None = None,
 ) -> list[dict]:
     results = []
     for device in devices:
@@ -18,6 +19,10 @@ def filter_devices(
                 continue
         if vendor is not None:
             if device.get("deviceVendorType") != vendor:
+                continue
+        if label is not None:
+            device_labels = {lbl.get("name") for lbl in device.get("labels", [])}
+            if label not in device_labels:
                 continue
         results.append(device)
     return results

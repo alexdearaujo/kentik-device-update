@@ -43,16 +43,21 @@ def print_candidate_table(devices: list[dict], new_credential: str) -> None:
     table.add_column("Device Name", style="cyan")
     table.add_column("Site")
     table.add_column("Vendor")
+    table.add_column("Labels", style="dim")
     table.add_column("Agent ID")
     table.add_column("Current Credential", style="yellow")
     table.add_column("New Credential", style="green")
 
     for d in devices:
         nms = d.get("nms") or {}
+        label_names = ", ".join(
+            lbl["name"] for lbl in d.get("labels", []) if lbl.get("name")
+        )
         table.add_row(
             d.get("deviceName") or d.get("id", "?"),
             (d.get("site") or {}).get("siteName", ""),
             d.get("deviceVendorType", ""),
+            label_names,
             nms.get("agentId", ""),
             (nms.get("snmp") or {}).get("credentialName", ""),
             new_credential,

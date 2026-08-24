@@ -9,6 +9,7 @@ from .migrate import print_candidate_table, run_migration
 
 _console = Console()
 _QUIT = "__quit__"
+_NO_FILTER = "__no_filter__"
 _QUIT_CHOICE = questionary.Choice("← Quit", value=_QUIT)
 _STYLE = questionary.Style([
     ("highlighted", "fg:#ffffff bg:#ff6600 bold"),
@@ -105,7 +106,7 @@ def prompt_run(client: KentikClient, debug: bool = False) -> None:
         site_answer = questionary.select(
             f"Filter by site? ({len(site_names)} available)",
             choices=[
-                questionary.Choice("No filter — include all sites", value=None),
+                questionary.Choice("No filter — include all sites", value=_NO_FILTER),
                 *site_names,
                 questionary.Separator(),
                 _QUIT_CHOICE,
@@ -115,7 +116,7 @@ def prompt_run(client: KentikClient, debug: bool = False) -> None:
         if _aborted(site_answer):
             _console.print("Aborted.")
             return
-        if site_answer:
+        if site_answer != _NO_FILTER:
             candidates = [
                 d for d in candidates
                 if (d.get("site") or {}).get("siteName") == site_answer
@@ -129,7 +130,7 @@ def prompt_run(client: KentikClient, debug: bool = False) -> None:
         vendor_answer = questionary.select(
             f"Filter by vendor? ({len(vendor_names)} available)",
             choices=[
-                questionary.Choice("No filter — include all vendors", value=None),
+                questionary.Choice("No filter — include all vendors", value=_NO_FILTER),
                 *vendor_names,
                 questionary.Separator(),
                 _QUIT_CHOICE,
@@ -139,10 +140,38 @@ def prompt_run(client: KentikClient, debug: bool = False) -> None:
         if _aborted(vendor_answer):
             _console.print("Aborted.")
             return
-        if vendor_answer:
+        if vendor_answer != _NO_FILTER:
             candidates = [
                 d for d in candidates
                 if d.get("deviceVendorType") == vendor_answer
+            ]
+
+    # Optional label filter derived from current candidate set
+    label_names = sorted({
+        lbl["name"]
+        for d in candidates
+        for lbl in d.get("labels", [])
+        if lbl.get("name")
+    })
+    if label_names:
+        label_answer = questionary.select(
+            f"Filter by label? ({len(label_names)} available)",
+            choices=[
+                questionary.Choice("No filter — include all labels", value=None),
+                *label_names,
+                questionary.Separator(),
+                _QUIT_CHOICE,
+            ],
+            style=_STYLE,
+        ).ask()
+        if _aborted(label_answer):
+            _console.print("Aborted.")
+            return
+        if label_answer != _NO_FILTER:
+            candidates = [
+                d for d in candidates
+                if any(lbl.get("name") == label_answer
+                       for lbl in d.get("labels", []))
             ]
 
     if not candidates:

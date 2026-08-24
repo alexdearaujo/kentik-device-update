@@ -122,6 +122,7 @@ equals the value passed as `--old-credential`. The SNMPv2 community string
 | GET | `/device/v202504beta2/device/name/{name}` | Lookup by device name |
 | PUT | `/device/v202504beta2/device/{id}` | Single-device update (fallback) |
 | PUT | `/device/v202504beta2/device/batch_update` | Batch update ≤ 100 devices |
+| GET | `/label/v202210/labels` | List all org labels (interactive filter) |
 
 ## Environment variables
 
@@ -143,10 +144,11 @@ Prompt sequence:
 
 1. Select old credential from unique `nms.snmp.credentialName` values
 2. Enter new v3 credential name
-3. Optionally filter by site (checkbox)
-4. Optionally filter by vendor (checkbox)
-5. Review candidate table
-6. Choose: Dry-run / Apply / Quit
+3. Optionally filter by site (select)
+4. Optionally filter by vendor (select)
+5. Optionally filter by label (select; derived from current candidate set)
+6. Review candidate table (includes Labels column)
+7. Choose: Dry-run / Apply / Quit
 
 ### Non-interactive / CI
 
@@ -156,6 +158,7 @@ python -m kentik_snmp_migrate \
   --new-credential <name> \
   [--site <site_name>] \
   [--vendor <device_vendor_type>] \
+  [--label <label_name>] \
   [--dry-run]
 ```
 

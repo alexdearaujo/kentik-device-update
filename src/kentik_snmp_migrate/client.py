@@ -4,6 +4,7 @@ import httpx
 
 _API_VERSION = "v202504beta2"
 _CRED_API_VERSION = "v202407alpha1"
+_LABEL_API_VERSION = "v202210"
 _SNMP_V3_TYPE = "SECRET_TYPE_SNMP_V3"
 _SNMP_V2_TYPES = {"SECRET_TYPE_SNMP_V1", "SECRET_TYPE_SNMP_V2C"}
 
@@ -80,6 +81,12 @@ class KentikClient:
             for g in groups
             if g.get("type") in _SNMP_V2_TYPES and g.get("name")
         )
+
+    def list_labels(self) -> list[dict]:
+        """Returns all labels configured in the org."""
+        response = self._client.get(f"/label/{_LABEL_API_VERSION}/labels")
+        _raise_for_status(response)
+        return response.json().get("labels", [])
 
     def close(self) -> None:
         self._client.close()

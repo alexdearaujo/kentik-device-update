@@ -61,6 +61,10 @@ def main() -> None:
         "--vendor", metavar="VENDOR_TYPE", help="Exact device_vendor_type filter"
     )
     parser.add_argument(
+        "--label", metavar="LABEL_NAME",
+        help="Exact label name filter (device must carry this label)",
+    )
+    parser.add_argument(
         "--dry-run", action="store_true",
         help="Preview changes without writing to the API",
     )
@@ -112,6 +116,7 @@ def _run_noninteractive(client: KentikClient, args: argparse.Namespace) -> None:
         old_credential=args.old_credential,
         site=args.site,
         vendor=args.vendor,
+        label=args.label,
     )
 
     if not candidates:
